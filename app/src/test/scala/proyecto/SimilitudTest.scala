@@ -97,7 +97,124 @@ class SimilitudTest extends AnyFunSuite {
     assert(detectarDirecto(c1, 3, 0.2, 5) == detectarConIndice(c1, 3, 0.2, 5))
     assert(detectarDirecto(c2, 3, 0.3, 5) == detectarConIndice(c2, 3, 0.3, 5))
   }
+  ///INTEGRANTE 1
+  test("normalizar: quita la puntuación y baja a minúsculas") {
+    assert(normalizar("Hola, Mundo!") == Vector("hola", "mundo"))
+  }
 
+  test("normalizar: espacios, tabuladores y saltos de línea solo separan") {
+    assert(normalizar("  uno   dos\t tres\n") == Vector("uno", "dos", "tres"))
+  }
+
+  test("normalizar: los dígitos se conservan como palabras") {
+    assert(normalizar("Version 2 del 2026-11-19") ==
+      Vector("version", "2", "del", "2026", "11", "19"))
+  }
+
+  test("normalizar: una cadena vacía o de puros signos no tiene palabras") {
+    assert(normalizar("") == Vector())
+    assert(normalizar("¡¿?! ... --") == Vector())
+  }
+
+  test("normalizar: el guion y el apóstrofe separan, y las tildes y la eñe se conservan") {
+    assert(normalizar("don't stop-me") == Vector("don", "t", "stop", "me"))
+    assert(normalizar("Año Nuevo: ¡Canción!") == Vector("año", "nuevo", "canción"))
+  }
+
+  // fragmentos ----------------------------------------------------------------
+
+  test("fragmentos: con k = 3 sobre cinco palabras salen tres, en orden") {
+    assert(fragmentos(Vector("a", "b", "c", "d", "e"), 3) ==
+      Vector(Vector("a", "b", "c"), Vector("b", "c", "d"), Vector("c", "d", "e")))
+  }
+
+  test("fragmentos: si hay menos de k palabras no sale ninguno") {
+    assert(fragmentos(Vector("a", "b"), 3) == Vector())
+    assert(fragmentos(Vector(), 1) == Vector())
+  }
+
+  test("fragmentos: con exactamente k palabras sale uno, igual al vector completo") {
+    assert(fragmentos(Vector("x", "y", "z"), 3) == Vector(Vector("x", "y", "z")))
+  }
+
+  test("fragmentos: con k = 1 cada palabra es su propio fragmento") {
+    assert(fragmentos(Vector("a", "b", "c"), 1) ==
+      Vector(Vector("a"), Vector("b"), Vector("c")))
+  }
+
+  test("fragmentos: salen t - k + 1 aunque las palabras se repitan") {
+    val casos = for (t <- 0 to 40; k <- 1 to 10) yield (t, k)
+    assert(casos.forall { case (t, k) =>
+      fragmentos(Vector.fill(t)("a"), k).length == math.max(0, t - k + 1) })
+  }
+
+  // huella --------------------------------------------------------------------
+
+  test("huella: el conjunto de fragmentos de cuatro palabras con k = 2") {
+    assert(huella(("h0", Vector("a", "b", "c", "d")), 2) ==
+      Set(Vector("a", "b"), Vector("b", "c"), Vector("c", "d")))
+  }
+
+  test("huella: un fragmento repetido cuenta una sola vez") {
+    // a b a b a tiene cuatro fragmentos, pero solo dos distintos.
+    val h = huella(("h1", Vector("a", "b", "a", "b", "a")), 2)
+    assert(h == Set(Vector("a", "b"), Vector("b", "a")))
+    assert(h.size == 2)
+  }
+
+  test("huella: con menos de k palabras es vacía y con exactamente k tiene un fragmento") {
+    assert(huella(("h2", Vector("a", "b")), 3) == Set())
+    assert(huella(("h3", Vector("a", "b", "c")), 3) == Set(Vector("a", "b", "c")))
+  }
+
+  test("huella: su tamaño es a lo sumo t - k + 1, con igualdad si no hay repetidos") {
+    val distintas: Documento = ("h4", Vector("a", "b", "c", "d", "e", "f", "g", "h", "i", "j"))
+    assert(huella(distintas, 3).size == 8)
+    val alAzar = documentoAlAzar("h5", 50, 5)
+    assert((1 to 6).forall(k => huella(alAzar, k).size <= 50 - k + 1))
+  }
+
+  test("huella: no depende del id del documento, pero sí del orden de las palabras") {
+    val palabras = Vector("uno", "dos", "tres", "cuatro")
+    assert(huella(("x", palabras), 2) == huella(("y", palabras), 2))
+    assert(huella(("x", palabras), 2) != huella(("x", palabras.reverse), 2))
+  }
+
+  // huellas -------------------------------------------------------------------
+
+  test("huellas: un corpus vacío no tiene huellas") {
+    assert(huellas(Vector(), 3) == Vector())
+  }
+
+  test("huellas: la huella de cada documento, en el orden del corpus") {
+    val corpus: Corpus = Vector(
+      ("a", Vector("x", "y", "z")),
+      ("b", Vector("y", "z", "w")))
+    assert(huellas(corpus, 2) == Vector(
+      Set(Vector("x", "y"), Vector("y", "z")),
+      Set(Vector("y", "z"), Vector("z", "w"))))
+  }
+
+  test("huellas: un documento corto deja una huella vacía en su misma posición") {
+    val corpus: Corpus = Vector(
+      ("d0", Vector("a", "b", "c", "d", "e")),
+      ("d1", Vector("a", "b")),
+      ("d2", Vector("a")))
+    assert(huellas(corpus, 2).map(h => h.size) == Vector(4, 1, 0))
+  }
+
+  test("huellas: dos copias del mismo documento tienen huellas iguales") {
+    val d: Documento = ("d", Vector("p", "q", "r", "s", "t"))
+    val hs = huellas(Vector(d, ("copia", d._2)), 3)
+    assert(hs(0) == hs(1))
+  }
+
+  test("huellas: coincide con calcular cada huella por separado en un corpus al azar") {
+    val corpus = corpusAlAzar(15, 40, 6)
+    assert(List(1, 2, 3).forall { k =>
+      huellas(corpus, k) == corpus.map(d =>
+        d._2.sliding(k).filter(w => w.length == k).map(w => w.toVector).toSet) })
+  }
   ///INTEGRANTE 2
 
   /** Una huella a partir de fragmentos escritos como "a b c". */

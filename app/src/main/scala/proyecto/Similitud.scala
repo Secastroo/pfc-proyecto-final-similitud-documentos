@@ -71,20 +71,29 @@ object Similitud {
    * Pasa el texto a minúsculas, convierte en separador todo carácter que no
    * sea letra o dígito y devuelve el vector de palabras no vacías.
    */
-  def normalizar(texto: String): Vector[String] = ???
-
+  def normalizar(texto: String): Vector[String] = {
+    // Todo lo que no es letra o dígito se vuelve un espacio, que separa palabras.
+    val limpio = texto.toLowerCase.map(c => if (c.isLetterOrDigit) c else ' ')
+    // Al partir por espacios pueden quedar cadenas vacías: se descartan.
+    limpio.split(' ').toVector.filter(palabra => palabra.nonEmpty)
+  }
   /**
    * Los t - k + 1 fragmentos de k palabras consecutivas, en el orden en que
    * aparecen; el vector vacío si el documento tiene menos de k palabras.
    */
-  def fragmentos(ts: Vector[String], k: Int): Vector[Fragmento] = ???
+  def fragmentos(ts: Vector[String], k: Int): Vector[Fragmento] =
+    // Caso base: no alcanzan k palabras para un fragmento (o k no es positivo).
+    if (k <= 0 || ts.length < k) Vector()
+    // Paso: el fragmento que empieza en la primera palabra, seguido de los que
+    // salen de quitarla.
+    else ts.take(k) +: fragmentos(ts.tail, k)
 
   /** El conjunto de fragmentos del documento: un repetido cuenta una vez. */
-  def huella(d: Documento, k: Int): Huella = ???
-
+  def huella(d: Documento, k: Int): Huella =
+    fragmentos(palabrasDoc(d), k).toSet
   /** Una huella por documento del corpus, en el mismo orden. */
-  def huellas(c: Corpus, k: Int): Vector[Huella] = ???
-
+  def huellas(c: Corpus, k: Int): Vector[Huella] =
+    for (d <- c) yield huella(d, k)
   /**
    * Índice de Jaccard de dos huellas, el tamaño de la intersección sobre el de
    * la unión. Dos huellas vacías dan cero y no dividen por cero.

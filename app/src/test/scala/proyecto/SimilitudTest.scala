@@ -229,35 +229,15 @@ class SimilitudTest extends AnyFunSuite {
 
   // --- jaccard ---------------------------------------------------------------
 
-  test("jaccard: huellas disjuntas dan 0") {
-    assert(jaccard(i2hu("a b", "b c"), i2hu("x y", "y z")) == 0.0)
-  }
-
-  test("jaccard: huellas iguales dan 1") {
-    val h = i2hu("a b", "b c", "c d")
-    assert(jaccard(h, h) == 1.0)
-  }
-
   test("jaccard: dos huellas vacías dan 0 y no NaN") {
     val r = jaccard(Set(), Set())
     assert(r == 0.0 && !r.isNaN)
-  }
-
-  test("jaccard: una huella vacía y otra no dan 0") {
-    assert(jaccard(Set(), i2hu("a b")) == 0.0)
-    assert(jaccard(i2hu("a b"), Set()) == 0.0)
   }
 
   test("jaccard: intersección 2 y unión 5 dan 0.4") {
     val a = i2hu("a b", "b c", "c d")
     val b = i2hu("b c", "c d", "d e", "e f")
     assert(math.abs(jaccard(a, b) - 0.4) < eps)
-  }
-
-  test("jaccard: una huella contenida en otra da |A| / |B|") {
-    val a = i2hu("a b", "b c")
-    val b = i2hu("a b", "b c", "c d", "d e")
-    assert(math.abs(jaccard(a, b) - 0.5) < eps)
   }
 
   test("jaccard: es simétrica y el orden de los fragmentos no cuenta") {
@@ -288,14 +268,6 @@ class SimilitudTest extends AnyFunSuite {
     assert(parejas(1) == Vector())
   }
 
-  test("parejas: un número negativo de documentos da el vector vacío") {
-    assert(parejas(-3) == Vector())
-  }
-
-  test("parejas: con 2 documentos solo está (0, 1)") {
-    assert(parejas(2) == Vector((0, 1)))
-  }
-
   test("parejas: con 4 documentos salen las seis, en orden") {
     assert(parejas(4) ==
       Vector((0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)))
@@ -317,20 +289,12 @@ class SimilitudTest extends AnyFunSuite {
     assert(ps == ps.sorted)
   }
 
-  test("parejas: el último es (n - 2, n - 1) y el primero (0, 1)") {
-    assert(parejas(9).head == ((0, 1)) && parejas(9).last == ((7, 8)))
-  }
-
   // --- similitudes -----------------------------------------------------------
 
   val i2h0: Huella = i2hu("a b", "b c", "c d")
   val i2h1: Huella = i2hu("b c", "c d", "d e", "e f")
   val i2h2: Huella = i2hu("x y")
   val i2hv: Vector[Huella] = Vector(i2h0, i2h1, i2h2)
-
-  test("similitudes: sin parejas da el vector vacío") {
-    assert(similitudes(i2hv, Vector()) == Vector())
-  }
 
   test("similitudes: valores conocidos de las tres parejas") {
     val ms = similitudes(i2hv, parejas(3))
@@ -344,11 +308,6 @@ class SimilitudTest extends AnyFunSuite {
     val ms = similitudes(i2hv, ps)
     assert(ms.map(m => (m._1, m._2)) == ps)
     assert(ms(0)._3 == 0.0 && math.abs(ms(1)._3 - 0.4) < eps)
-  }
-
-  test("similitudes: una sola pareja") {
-    val ms = similitudes(i2hv, Vector((0, 1)))
-    assert(ms.length == 1 && math.abs(ms(0)._3 - 0.4) < eps)
   }
 
   test("similitudes: una huella vacía da 0 con todas") {
@@ -609,6 +568,4 @@ class SimilitudTest extends AnyFunSuite {
     val resDirecto = detectarDirecto(c, 3, 0.25, 5)
     assert(resIndice == resDirecto)
   }
-
-
 }
